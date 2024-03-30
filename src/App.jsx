@@ -6,13 +6,17 @@ import Log from "./components/Log";
 import GameOver from "./components/GamerOver";
 import { winningComb } from "./winningComb";
 
+//Initial players
+const PLAYERS = {
+  X: 'Player 1',
+  O: 'Player 2'
+}
 //Initial GameBoard initialization
-const initialGameBoard = [
+const INITIAL_GAME_BOARD = [
   [null, null, null],
   [null, null, null],
   [null, null, null],
   ];
-
 
 //Makes a helper function to avoid unnecessary state usage
 function deriveActivePlayer(gameTurns) {
@@ -24,21 +28,29 @@ function deriveActivePlayer(gameTurns) {
 
   return currentPlayer;
 }
+function deriveWinner(board, players){
+  //Starts off with no winners
+  let winner = null;
 
-function App() {
-  //State needed to access player updated name and not just original symbol/name
-  const [players, setPlayers] = useState({
-    X: 'Player 1',
-    O: 'Player 2'
-  })
+  //Checks for winner using our win conditions from another file
+  for (const combination of winningComb){
+    const firstSquareSymbol = board[combination[0].row][combination[0].col];
+    const secondSquareSymbol = board[combination[1].row][combination[1].col];
+    const thirdSquareSymbol = board[combination[2].row][combination[2].col];
 
-  //State needed to track game progress
-  const [gameTurns, setGameTurns] = useState([]);
+    if(firstSquareSymbol &&
+       firstSquareSymbol === secondSquareSymbol &&
+       firstSquareSymbol === thirdSquareSymbol) {
+        winner = players[firstSquareSymbol];
+    }
+  };
   
-  const activePlayer = deriveActivePlayer(gameTurns);
+  return winner;  
+}
 
+function deriveGameBoard(gameTurns){
   //Deep copy so that initialGameBoard is not impacted on gameBoard Change
-  let gameBoard = [...initialGameBoard.map(array =>[...array])];
+  let gameBoard = [...INITIAL_GAME_BOARD.map(array =>[...array])];
 
   //gameBoard is updated based on previous game actions
   for (const turn of gameTurns) {
@@ -47,23 +59,19 @@ function App() {
 
     gameBoard[row][col]= player;  // Adds the player symbol to their respective spot
   }
+
+  return gameBoard;
+}
+
+function App() {
+  const [players, setPlayers] = useState(PLAYERS);//State needed to access player updated name and not just original symbol/name
+  const [gameTurns, setGameTurns] = useState([]); //State needed to track game progress
   
-  //Starts off with no winners
-  let winner = null;
-
-  //Checks for winner using our win conditions from another file
-  for (const combination of winningComb){
-    const firstSquareSymbol = gameBoard[combination[0].row][combination[0].col];
-    const secondSquareSymbol = gameBoard[combination[1].row][combination[1].col];
-    const thirdSquareSymbol = gameBoard[combination[2].row][combination[2].col];
-
-    if(firstSquareSymbol &&
-       firstSquareSymbol === secondSquareSymbol &&
-       firstSquareSymbol === thirdSquareSymbol) {
-        winner = players[firstSquareSymbol];
-    }
-  }
-
+  //Calls helper functions
+  const activePlayer = deriveActivePlayer(gameTurns);
+  const gameBoard = deriveGameBoard(gameTurns);
+  const winner = deriveWinner(gameBoard, players);
+  
   //If board is full we don't have a winner but still need the game to be over
   const hasDraw = gameTurns.length === 9 && !winner;
 
@@ -100,8 +108,8 @@ function App() {
     <main>
       <div id="game-container">
         <ol id="players" className="highlight-player">
-          <Player initialName="Player 1" symbol="X" isActive={activePlayer === 'X'} onSave={handlePlayerNameChange}/>
-          <Player initialName="Player 2" symbol="O" isActive={activePlayer === 'O'} onSave={handlePlayerNameChange}/>
+          <Player initialName={PLAYERS.X} symbol="X" isActive={activePlayer === 'X'} onSave={handlePlayerNameChange}/>
+          <Player initialName={PLAYERS.O} symbol="O" isActive={activePlayer === 'O'} onSave={handlePlayerNameChange}/>
         </ol>
         {(winner || hasDraw) && <GameOver winner={winner} onSelectButton={handleRematch}/>} {/*Finishes the game if needed*/}
         <GameBoard onSelectSquare={handleSelectSquare} board={gameBoard} /> {/* Usage of lifting the state to update game actions */}
